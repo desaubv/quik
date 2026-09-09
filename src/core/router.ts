@@ -9,6 +9,7 @@ type HttpMethod =
     | "delete"
     | "options"
     | "head"
+    | "query"
     | "all";
 
 class QuikRouter {
@@ -64,6 +65,10 @@ class QuikRouter {
         return this.register("put", handler);
     }
 
+    query(handler: RequestHandler) {
+        return this.register("query", handler);
+    }
+
     patch(handler: RequestHandler) {
         return this.register("patch", handler);
     }
@@ -75,7 +80,10 @@ class QuikRouter {
 }
 
 function Router() {
-    return new QuikRouter;
+    return new QuikRouter();
 }
 
-export { QuikRouter, Router };
+export { 
+    QuikRouter, Router,
+    type HttpMethod
+};

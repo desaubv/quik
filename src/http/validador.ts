@@ -4,7 +4,10 @@ import {
     InvalidBodyException,
     RequiredFieldException,
     InvalidTypeException,
-    EmptyArrayException
+    EmptyArrayException,
+    InvalidBodyLengthException,
+    InvalidBodyPatternException,
+    EmptyBodyException
 } from "./exceptions.js";
 
 import {
@@ -34,6 +37,17 @@ interface Body {
     [name: string]: unknown;
 }
 
+type TextValidationOptions = {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: RegExp;
+    allowEmpty?: boolean;
+    trim?: boolean;
+    validator?: (
+        value: string
+    ) => string | ValidationException;
+};
+
 const Validator = {
     body(body: Body, fields: BodyFields) {
         if (body === undefined) {
@@ -49,7 +63,48 @@ const Validator = {
         }
 
         return validateObject(body, fields);
-    }
+    },
+
+    text(body: string, options: TextValidationOptions = {}) {
+        const {
+            minLength,
+            maxLength,
+            pattern,
+            allowEmpty = true,
+            trim = false,
+            validator = undefined
+        } = options;
+
+        let value = trim ? body.trim() : body;
+
+        if (!allowEmpty && value.length === 0) {
+            throw new EmptyBodyException();
+        }
+
+        if (minLength !== undefined && value.length < minLength) {
+            throw new InvalidBodyLengthException(minLength, "min");
+        }
+
+        if (maxLength !== undefined && value.length > maxLength) {
+            throw new InvalidBodyLengthException(maxLength, "max");
+        }
+
+        if (pattern !== undefined && !pattern.test(value)) {
+            throw new InvalidBodyPatternException(pattern);
+        }
+
+        if (validator) {
+            const result = validator(value);
+            if (result instanceof ValidationException) {
+                throw result;
+            }
+
+            value = result;
+        }
+
+        return value;
+    },
+
 };
 
 function validateObject(

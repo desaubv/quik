@@ -22,6 +22,35 @@ class InvalidBodyException extends ValidationException {
     }
 }
 
+class EmptyBodyException extends ValidationException {
+    constructor() {
+        super("Body must not be empty");
+
+        this.name = "EmptyBodyException";
+    }
+}
+
+class InvalidBodyLengthException extends ValidationException {
+    constructor(length: number, type: "min" | "max") {
+        const message =
+            type === "min"
+                ? `The body length must be at least ${length} characters`
+                : `The body length must not exceed ${length} characters`;
+
+        super(message);
+
+        this.name = "InvalidBodyLengthException";
+    }
+}
+
+class InvalidBodyPatternException extends ValidationException {
+    constructor(pattern: RegExp) {
+        super(`The body does not match the required pattern: ${pattern}`);
+
+        this.name = 'InvalidBodyPatternException';
+    }
+}
+
 class RequiredFieldException extends ValidationException {
     constructor(
         public readonly field: string,
@@ -70,6 +99,9 @@ export {
     ValidationException,
     RequestBodyUndefinedException,
     InvalidBodyException,
+    EmptyBodyException,
+    InvalidBodyLengthException,
+    InvalidBodyPatternException,
     RequiredFieldException,
     InvalidTypeException,
     CustomValidationException,

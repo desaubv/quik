@@ -277,33 +277,37 @@ class QuikServer {
         const bodyParser = this.config.bodyParser;
 
         switch (bodyParser.type) {
-            case "json":
+            case "json": {
                 this.app.use(
                     express.json(bodyParser.options)
                 );
                 break;
+            }
 
+            case "urlencoded": {
+                const options = bodyParser.options ?? { extended: true };
 
-            case "urlencoded":
                 this.app.use(
-                    express.urlencoded(bodyParser.options)
+                    express.urlencoded(options)
                 );
                 break;
+            }
 
+            case "raw": {
+                const options = bodyParser.options ?? { type: "*/*" };
 
-            case "raw":
                 this.app.use(
-                    express.raw(bodyParser.options)
+                    express.raw(options)
                 );
                 break;
+            }
 
-
-            case "text":
+            case "text": {
                 this.app.use(
                     express.text(bodyParser.options)
                 );
                 break;
-
+            }
         }
 
         if (this.middlewares.length > 0)
@@ -430,5 +434,6 @@ function Server() {
 }
 
 export {
-    Server
+    Server,
+    type QuikServerConfig
 };

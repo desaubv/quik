@@ -1,4 +1,5 @@
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
+import fileUpload from "express-fileupload";
 import http, { type Server as HTTPServer } from "node:http";
 import path from "node:path";
 import fs from "node:fs";
@@ -24,16 +25,13 @@ type BodyParserConfig =
     | {
         type: "json";
         options?: JsonOptions;
-    }
-    | {
+    } | {
         type: "urlencoded";
         options?: UrlencodedOptions;
-    }
-    | {
+    } | {
         type: "raw";
         options?: RawOptions;
-    }
-    | {
+    } | {
         type: "text";
         options?: TextOptions;
     };
@@ -47,6 +45,24 @@ type HTTPConfig = {
     shutdownTimeout?: number;
 };
 
+type FileUploadConfig = {
+    createParentPath?: boolean;
+    uriDecodeFileNames?: boolean;
+    safeFileNames?: boolean | RegExp;
+    preserveExtension?: number | boolean | undefined;
+    abortOnLimit?: boolean;
+    responseOnLimit?: string;
+    limitHandler?: false | ((req: express.Request, res: express.Response, next: express.NextFunction) => void);
+    useTempFiles?: boolean;
+    tempFileDir?: string;
+    tempFilePermissions?: fs.Mode;
+    parseNested?: boolean;
+    debug?: boolean;
+    logger?: { log: (...data: any[]) => void }; 
+    uploadTimeout?: number;
+    hashAlgorithm?: string;
+}
+
 type ExpressConfig = {
     name?: string;
     env?: string;
@@ -59,6 +75,7 @@ type QuikServerConfig = {
     bodyParser: BodyParserConfig;
     http: HTTPConfig;
     express: ExpressConfig;
+    fileUpload?: FileUploadConfig;
 };
 type RoutingDict = Record<string, QuikRouter>;
 
@@ -119,7 +136,12 @@ class QuikServer {
             express: {
                 ...this.config.express,
                 ...config.express
+            },
+            fileUpload: {
+                ...this.config.fileUpload,
+                ...config.fileUpload
             }
+
         };
 
         // Notify if the provided time zone is invalid
@@ -273,6 +295,18 @@ class QuikServer {
         return this;
     }
 
+    #configureFileUpload() {
+        const config = this.config.fileUpload;
+
+        if (config) {
+            this.app.use(
+                fileUpload(config)
+            );
+        }
+
+        return this;
+    }
+
     #configureMiddleware() {
         const bodyParser = this.config.bodyParser;
 
@@ -415,6 +449,7 @@ class QuikServer {
     start() {
         this.#configureExpress();
         this.#configureMiddleware();
+        this.#configureFileUpload();
 
         this.#loadStaticDirs()
         this.#loadRoutes();

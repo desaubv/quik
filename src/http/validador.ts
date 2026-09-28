@@ -13,12 +13,13 @@ import {
 import {
     ArrayType,
     ObjectType,
-    Types
+    Types,
 } from "./validatorTypes.js";
 
 import type {
+    FileFields,
     ValidatorType,
-    ObjectFields
+    ObjectFields,
 } from "./validatorTypes.js";
 
 type FieldDefinition = {
@@ -105,7 +106,207 @@ const Validator = {
         return value;
     },
 
+    file: (file: any, options: FileFields = {}) => {
+        const {
+            canBeEmpty = false,
+            maxNumberOfFiles,
+            minNumberOfFiles
+        } = options;
+
+        /*
+         * No file
+         */
+        if (!file) {
+            if (canBeEmpty) {
+                return null;
+            }
+
+            throw new ValidationException(
+                "File is required but not provided."
+            );
+        }
+
+        /*
+         * Multiple files
+         */
+        if (Array.isArray(file)) {
+
+            if (file.length === 0) {
+                if (canBeEmpty) {
+                    return null;
+                }
+
+                throw new ValidationException(
+                    "At least one file is required."
+                );
+            }
+
+            if (
+                maxNumberOfFiles !== undefined &&
+                file.length > maxNumberOfFiles
+            ) {
+                throw new ValidationException(
+                    `Maximum number of files allowed is ${maxNumberOfFiles}.`
+                );
+            }
+
+            if (
+                minNumberOfFiles !== undefined &&
+                file.length < minNumberOfFiles
+            ) {
+                throw new ValidationException(
+                    `Minimum number of files required is ${minNumberOfFiles}.`
+                );
+            }
+
+            return file.map((f) => validateFile(f, options));
+        }
+
+        /*
+         * Single file
+         */
+        return validateFile(file, options);
+    }
 };
+
+
+function validateFile(
+    file: any,
+    options: FileFields = {}
+) {
+    const {
+        maxSizeMb,
+        minSizeMb,
+        mimeTypes,
+        extensions,
+        fileNamePattern
+    } = options;
+
+
+    /*
+     * Validate object
+     */
+    if (
+        typeof file !== "object" ||
+        file === null
+    ) {
+        throw new ValidationException(
+            "Invalid file."
+        );
+    }
+
+
+    /*
+     * Validate size
+     */
+    if (
+        typeof file.size !== "number" ||
+        file.size < 0
+    ) {
+        throw new ValidationException(
+            "Invalid file size."
+        );
+    }
+
+
+    /*
+     * Maximum size
+     */
+    if (
+        maxSizeMb !== undefined &&
+        file.size > maxSizeMb * 1024 * 1024
+    ) {
+        throw new ValidationException(
+            `File size exceeds the maximum limit of ${maxSizeMb} MB.`
+        );
+    }
+
+
+    /*
+     * Minimum size
+     */
+    if (
+        minSizeMb !== undefined &&
+        file.size < minSizeMb * 1024 * 1024
+    ) {
+        throw new ValidationException(
+            `File size is below the minimum limit of ${minSizeMb} MB.`
+        );
+    }
+
+
+    /*
+     * MIME type
+     */
+    if (mimeTypes !== undefined) {
+
+        const allowedMimeTypes = Array.isArray(mimeTypes)
+            ? mimeTypes
+            : [mimeTypes];
+
+        if (
+            typeof file.mimetype !== "string" ||
+            !allowedMimeTypes.includes(file.mimetype)
+        ) {
+            throw new ValidationException(
+                `File type is not allowed. Allowed types are: ${allowedMimeTypes.join(", ")}`
+            );
+        }
+    }
+
+
+    /*
+     * File extension
+     */
+    if (extensions !== undefined) {
+
+        const allowedExtensions = (
+            Array.isArray(extensions)
+                ? extensions
+                : [extensions]
+        ).map(
+            extension =>
+                extension
+                    .replace(/^\./, "")
+                    .toLowerCase()
+        );
+
+        if (typeof file.originalname !== "string") {
+            throw new ValidationException(
+                "Invalid file name."
+            );
+        }
+
+        const extension = file.originalname
+            .split(".")
+            .pop()
+            ?.toLowerCase();
+
+        if (
+            !extension ||
+            !allowedExtensions.includes(extension)
+        ) {
+            throw new ValidationException(
+                `File extension is not allowed. Allowed extensions are: ${allowedExtensions.join(", ")}`
+            );
+        }
+    }
+
+    /*
+     * File name pattern
+     */
+    if (
+        fileNamePattern !== undefined &&
+        !fileNamePattern.test(file.originalname)
+    ) {
+        throw new ValidationException(
+            "File name does not match the required pattern."
+        );
+    }
+
+
+    return file;
+}
 
 function validateObject(
     body: unknown,

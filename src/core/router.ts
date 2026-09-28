@@ -35,6 +35,8 @@ class QuikRouter {
         method: HttpMethod,
         handler: RequestHandler
     ) {
+        if(!this.router[method]) return this;
+        
         this.router[method](
             this.currentPath,
             ...this.pendingMiddleware,

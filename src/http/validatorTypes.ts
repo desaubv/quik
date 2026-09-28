@@ -64,6 +64,21 @@ export const Types = {
     Struct,
 };
 
+export type FileFields = {
+    maxSizeMb?: number;
+    minSizeMb?: number;
+
+    mimeTypes?: string | string[];
+    extensions?: string | string[];
+
+    canBeEmpty?: boolean;
+
+    maxNumberOfFiles?: number;
+    minNumberOfFiles?: number;
+
+    fileNamePattern?: RegExp;
+}
+
 export type PrimitiveType =
     | typeof Types.String
     | typeof Types.Number

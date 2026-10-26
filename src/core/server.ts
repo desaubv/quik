@@ -1,6 +1,7 @@
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
-import fileUpload from "express-fileupload";
 import http, { type Server as HTTPServer } from "node:http";
+import { registerServer } from "./serverContext.js";
+import fileUpload from "express-fileupload";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -58,7 +59,7 @@ type FileUploadConfig = {
     tempFilePermissions?: fs.Mode;
     parseNested?: boolean;
     debug?: boolean;
-    logger?: { log: (...data: any[]) => void }; 
+    logger?: { log: (...data: any[]) => void };
     uploadTimeout?: number;
     hashAlgorithm?: string;
 }
@@ -465,10 +466,15 @@ class QuikServer {
 }
 
 function Server() {
-    return new QuikServer();
+    const server = new QuikServer();
+
+    registerServer(server);
+
+    return server;
 }
 
 export {
     Server,
-    type QuikServerConfig
+    QuikServer,
+    type QuikServerConfig,
 };

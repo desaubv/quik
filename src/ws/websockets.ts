@@ -34,6 +34,16 @@ class QuikWebSocket {
     private disconnectHandler?: DisconnectHandler;
     private errorHandler?: ErrorHandler;
 
+    getWS(): WebSocketServer {
+        if (!this.server) {
+            throw new Error(
+                "WebSocket server has not been started."
+            );
+        }
+
+        return this.server;
+    }
+
     onConnect(handler: ConnectHandler) {
         this.connectHandler = handler;
 
